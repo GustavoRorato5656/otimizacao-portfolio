@@ -4,18 +4,22 @@ import numpy as np
 import pandas as pd
 from pypfopt import expected_returns, risk_models, EfficientFrontier
 
-# Defina o universo de ativos por grupo (com diferentes tipos de ativos)
+# Defina o universo de ativos por grupo (incluindo renda fixa brasileira)
 assets_universe = {
     'AAPL': ('Apple', 'ações', 'americano'), 'MSFT': ('Microsoft', 'ações', 'americano'), 'TSLA': ('Tesla', 'ações', 'americano'),
     'GOOG': ('Alphabet', 'ações', 'americano'), 'AMZN': ('Amazon', 'ações', 'americano'), 'SPY': ('S&P 500 ETF', 'ações', 'americano'),
     'BTC-USD': ('Bitcoin', 'criptomoedas', ''), 'ETH-USD': ('Ethereum', 'criptomoedas', ''),
     'NVDA': ('NVIDIA', 'ações', 'americano'), 'META': ('Meta', 'ações', 'americano'),
-    # Ações brasileiras (exemplos)
+    # Ações brasileiras
     'PETR4.SA': ('Petrobras', 'ações', 'brasileiro'), 'VALE3.SA': ('Vale', 'ações', 'brasileiro'),
     'ITUB4.SA': ('Itaú Unibanco', 'ações', 'brasileiro'), 'BBDC3.SA': ('Bradesco', 'ações', 'brasileiro'),
-    # Ações chinesas (exemplos)
+    # Ações chinesas
     'BABA': ('Alibaba', 'ações', 'chinês'), 'TCEHY': ('Tencent', 'ações', 'chinês'),
-    'PDD': ('Pinduoduo', 'ações', 'chinês'), 'JD': ('JD.com', 'ações', 'chinês')
+    'PDD': ('Pinduoduo', 'ações', 'chinês'), 'JD': ('JD.com', 'ações', 'chinês'),
+    # ETFs de Renda Fixa Brasileira
+    'IMAB11.SA': ('IMAB11 - ETF de Renda Fixa Brasileira', 'renda fixa', 'brasileiro'),  # ETF de títulos do Tesouro IPCA
+    'TBLL11.SA': ('TBLL11 - ETF de Tesouro Prefixado', 'renda fixa', 'brasileiro'),  # ETF de títulos prefixados
+    'FIXA11.SA': ('FIXA11 - ETF de Renda Fixa', 'renda fixa', 'brasileiro'),  # ETF de fundos de renda fixa
 }
 
 # Grupos de ativos
@@ -23,6 +27,7 @@ cryptos = ['BTC-USD', 'ETH-USD']
 stocks_usa = ['AAPL', 'MSFT', 'TSLA', 'GOOG', 'AMZN', 'SPY', 'NVDA', 'META']
 stocks_brazil = ['PETR4.SA', 'VALE3.SA', 'ITUB4.SA', 'BBDC3.SA']
 stocks_china = ['BABA', 'TCEHY', 'PDD', 'JD']
+bonds_brazil = ['IMAB11.SA', 'TBLL11.SA', 'FIXA11.SA']  # ETFs de Renda Fixa Brasileira
 
 # Entrada do usuário para o número de ativos na carteira
 num_assets = st.number_input("Quantos ativos você deseja na sua carteira?", min_value=1, max_value=10, value=3)
@@ -39,8 +44,8 @@ cov_matrix = risk_models.sample_cov(data)
 
 # Função para otimizar a carteira
 def optimize_portfolio(mean_returns, cov_matrix, num_assets):
-    # Seleciona os ativos disponíveis
-    all_assets = cryptos + stocks_usa + stocks_brazil + stocks_china
+    # Seleciona os ativos disponíveis (criptomoedas, ações e renda fixa brasileira)
+    all_assets = cryptos + stocks_usa + stocks_brazil + stocks_china + bonds_brazil
 
     # Selecione o número desejado de ativos
     selected_data = data[all_assets]
