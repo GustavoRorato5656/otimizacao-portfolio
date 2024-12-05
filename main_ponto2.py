@@ -27,41 +27,35 @@ cov_matrix = risk_models.sample_cov(data)
 # Criar o objeto Efficient Frontier
 ef = EfficientFrontier(mean_returns, cov_matrix)
 
-# Maximizar o Índice de Sharpe (com restrição de número de ativos)
-# Primeiramente, calcular a carteira ótima com todos os ativos
+# Maximizar o Índice de Sharpe com o número de ativos especificado
+# Calculando a carteira ótima com todos os ativos
 weights_all_assets = ef.max_sharpe()
 
-# Ordenar os ativos por peso e escolher os 'num_assets' mais relevantes
+# Ordenar os ativos por peso
 sorted_weights = pd.Series(weights_all_assets).sort_values(ascending=False)
 
-# Selecionar apenas os 'num_assets' melhores ativos com base no peso
+# Selecionar os 'num_assets' melhores ativos com base nos pesos
 selected_assets = sorted_weights.head(num_assets)
 
 # Normalizar os pesos para garantir que a soma seja 1
 total_weight = selected_assets.sum()
 normalized_weights = selected_assets / total_weight
 
-# Filtrar ativos que têm peso menor que 0.0001
-normalized_weights = normalized_weights[normalized_weights >= 0.0001]
+# Exibir os ativos selecionados e os pesos
+st.write(f"Ativos selecionados para a carteira ({num_assets} ativos):")
+st.write(normalized_weights)
 
-# Se houver ativos suficientes para compor a carteira
-if len(normalized_weights) >= num_assets:  # Garantir que tenhamos pelo menos 'num_assets' ativos
-    # Exibir os ativos selecionados e os pesos normalizados
-    st.write(f"Ativos selecionados para a carteira ({len(normalized_weights)} ativos):")
-    st.write(normalized_weights)
+# Criar um novo objeto Efficient Frontier apenas com os ativos selecionados
+ef = EfficientFrontier(mean_returns[normalized_weights.index], cov_matrix.loc[normalized_weights.index, normalized_weights.index])
 
-    # Recalcular o desempenho esperado da carteira com os pesos normalizados
-    ef = EfficientFrontier(mean_returns[normalized_weights.index], cov_matrix.loc[normalized_weights.index, normalized_weights.index])
-    ef_weights = normalized_weights.values  # Pesos normalizados
-    ef.set_weights(dict(zip(normalized_weights.index, ef_weights)))  # Definir pesos para o EfficientFrontier
+# Definir os pesos da carteira ótima com os ativos selecionados
+ef.set_weights(dict(zip(normalized_weights.index, normalized_weights.values)))
 
-    # Calcular o desempenho esperado da carteira
-    performance = ef.portfolio_performance()
-    st.write(f"Retorno esperado: {performance[0]:.2f}%")
-    st.write(f"Risco (Desvio Padrão): {performance[1]:.2f}%")
-    st.write(f"Índice de Sharpe: {performance[2]:.2f}")
+# Calcular o desempenho esperado da carteira
+performance = ef.portfolio_performance()
+st.write(f"Retorno esperado: {performance[0]:.2f}%")
+st.write(f"Risco (Desvio Padrão): {performance[1]:.2f}%")
+st.write(f"Índice de Sharpe: {performance[2]:.2f}")
 
-    # Exibir um gráfico da carteira ótima com os pesos normalizados
-    st.bar_chart(normalized_weights)
-else:
-    st.write(f"Não há ativos suficientes com peso significativo para formar uma carteira de {num_assets} ativos.")
+# Exibir um gráfico da carteira ótima
+st.bar_chart(normalized_weights)
