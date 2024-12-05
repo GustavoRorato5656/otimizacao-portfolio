@@ -6,7 +6,7 @@ st.title("Otimização de Portfólio por Guilherme Goya e Gustavo Rorato")
 st.write("Neste aplicativo de otimização de portfólio você encontrará sua carteira ótima")
 
 # Entrada do usuário: tickers de ativos
-tickers = st.text_input("Digite os tickers dos ativos separados por vírgula:", "AAPL, MSFT, TSLA")
+tickers = st.text_input("Digite os tickers dos ativos escolhidos separados por vírgula:", "AAPL, MSFT, TSLA")
 st.write("Você selecionou os seguintes ativos:", tickers)
 
 # Botão para buscar dados e calcular a carteira
