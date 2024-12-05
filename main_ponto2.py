@@ -45,7 +45,7 @@ normalized_weights = selected_assets / total_weight
 normalized_weights = normalized_weights[normalized_weights >= 0.0001]
 
 # Se houver ativos suficientes para compor a carteira
-if len(normalized_weights) > 0:
+if len(normalized_weights) >= num_assets:  # Garantir que tenhamos pelo menos 'num_assets' ativos
     # Exibir os ativos selecionados e os pesos normalizados
     st.write(f"Ativos selecionados para a carteira ({len(normalized_weights)} ativos):")
     st.write(normalized_weights)
@@ -64,4 +64,4 @@ if len(normalized_weights) > 0:
     # Exibir um gráfico da carteira ótima com os pesos normalizados
     st.bar_chart(normalized_weights)
 else:
-    st.write("Não há ativos suficientes com peso significativo para formar a carteira.")
+    st.write(f"Não há ativos suficientes com peso significativo para formar uma carteira de {num_assets} ativos.")
