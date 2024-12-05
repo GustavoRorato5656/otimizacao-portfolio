@@ -2,11 +2,11 @@ import streamlit as st
 import yfinance as yf
 
 # Título e descrição inicial
-st.title("Otimização de Portfólio por Guilherme Goya e Gustavo Rorato")
-st.write("Neste aplicativo de otimização de portfólio você encontrará sua carteira ótima")
+st.title("Otimização de Portfólio")
+st.write("Bem-vindo ao aplicativo de otimização de portfólio usando Streamlit!")
 
 # Entrada do usuário: tickers de ativos
-tickers = st.text_input("Digite os tickers dos ativos escolhidos separados por vírgula:", "AAPL, MSFT, TSLA")
+tickers = st.text_input("Digite os tickers dos ativos separados por vírgula:", "AAPL, MSFT, TSLA")
 st.write("Você selecionou os seguintes ativos:", tickers)
 
 # Botão para buscar dados e calcular a carteira
@@ -15,7 +15,8 @@ if st.button("Clique para calcular a carteira ótima"):
 
     # Baixar dados históricos dos ativos
     try:
-        data = yf.download(tickers.split(","), period="1y")  # Dados do último ano
+        tickers_list = tickers.split(",")  # Converte os tickers digitados em uma lista
+        data = yf.download(tickers_list, period="1y")  # Passa a lista de tickers
         st.write("Preços históricos dos ativos selecionados:")
         st.line_chart(data['Close'])  # Gráfico dos preços de fechamento
     except Exception as e:
