@@ -2,9 +2,8 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 from pypfopt import EfficientFrontier, risk_models, expected_returns
-st.write("""### Otimização de Portfólio com Ativos Selecionados""")
 st.title("Otimização de Portfólio com Ativos Selecionados")
-st.text("By: Guilherme Goya e Gustavo Rorato")
+st.write("""### By: Guilherme Goya e Gustavo Rorato""")
 # Entrada do usuário para os tickers dos ativos
 tickers = st.text_input("Digite os tickers dos ativos separados por vírgula:", "AAPL, MSFT, TSLA")
 
