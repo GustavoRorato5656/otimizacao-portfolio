@@ -2,8 +2,8 @@ import streamlit as st
 import yfinance as yf
 
 # Título e descrição inicial
-st.title("Otimização de Portfólio")
-st.write("Bem-vindo ao aplicativo de otimização de portfólio usando Streamlit!")
+st.title("Otimização de Portfólio por Guilherme Goya e Gustavo Rorato")
+st.write("Neste aplicativo de otimização de portfólio você encontrará sua carteira ótima")
 
 # Entrada do usuário: tickers de ativos
 tickers = st.text_input("Digite os tickers dos ativos separados por vírgula:", "AAPL, MSFT, TSLA")
