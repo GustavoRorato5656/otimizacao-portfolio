@@ -45,8 +45,12 @@ normalized_weights = selected_assets / total_weight
 st.write(f"Ativos selecionados para a carteira ({num_assets} ativos):")
 st.write(normalized_weights)
 
-# Calcular o desempenho esperado da carteira
+# Calcular o desempenho esperado da carteira com os pesos normalizados
 ef = EfficientFrontier(mean_returns[selected_assets.index], cov_matrix.loc[selected_assets.index, selected_assets.index])
+ef_weights = normalized_weights.values  # Pesos normalizados
+ef.set_weights(dict(zip(selected_assets.index, ef_weights)))  # Definir pesos para o EfficientFrontier
+
+# Calcular o desempenho esperado da carteira
 performance = ef.portfolio_performance()
 st.write(f"Retorno esperado: {performance[0]:.2f}%")
 st.write(f"Risco (Desvio Padrão): {performance[1]:.2f}%")
