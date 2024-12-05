@@ -64,6 +64,7 @@ def create_dashboard():
         st.bar_chart(pd.DataFrame.from_dict(top_weights, orient='index', columns=['Peso']))
         
         # Exibir métricas de desempenho
+        performance = ef.portfolio_performance()
         st.write(f"Retorno Esperado: {performance[0]:.2%}")
         st.write(f"Risco (Desvio Padrão): {performance[1]:.2%}")
         st.write(f"Índice de Sharpe: {performance[2]:.2f}")
