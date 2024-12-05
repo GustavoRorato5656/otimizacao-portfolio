@@ -52,11 +52,12 @@ def create_dashboard():
         tickers = [ticker for sublist in UNIVERSO_ATIVOS.values() for ticker in sublist]
         data = get_data(tickers, start_date, end_date)
         
-        # Filtrar dados para os ativos selecionados
-        selected_data = data[[ticker for ticker, _ in sorted_weights[:num_assets]]]
-        
         # Otimizar portfólio
-        top_weights, performance = optimize_portfolio(selected_data, num_assets)
+        top_weights, performance = optimize_portfolio(data, num_assets)
+        
+        # Filtrar dados para os ativos selecionados
+        selected_tickers = list(top_weights.keys())
+        selected_data = data[selected_tickers]
         
         # Exibir resultados
         st.write("Pesos Ótimos:", top_weights)
