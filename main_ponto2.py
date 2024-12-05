@@ -27,26 +27,36 @@ cov_matrix = risk_models.sample_cov(data)
 # Criar o objeto Efficient Frontier
 ef = EfficientFrontier(mean_returns, cov_matrix)
 
-# Maximizar o Índice de Sharpe (com restrição de número de ativos)
-# Primeiramente, calcular a carteira ótima com todos os ativos
+# Maximizar o Índice de Sharpe (sem restrições no número de ativos)
 weights_all_assets = ef.max_sharpe()
 
-# Ordenar os ativos por peso e escolher os 'num_assets' mais relevantes
+# Ordenar os ativos por peso
 sorted_weights = pd.Series(weights_all_assets).sort_values(ascending=False)
 
-# Selecionar apenas os 'num_assets' melhores ativos com base no peso
+# Selecionar os 'num_assets' mais relevantes
 selected_assets = sorted_weights.head(num_assets)
 
-# Exibir os ativos selecionados e os pesos
+# Criar uma carteira considerando o número de ativos selecionados
+ef = EfficientFrontier(mean_returns, cov_matrix)
+
+# Forçar a otimização considerando apenas os ativos selecionados
+ef_clean = EfficientFrontier(mean_returns[selected_assets.index], cov_matrix.loc[selected_assets.index, selected_assets.index])
+weights_optimal = ef_clean.max_sharpe()
+
+# Exibir os ativos selecionados e seus pesos
 st.write(f"Ativos selecionados para a carteira ({num_assets} ativos):")
 st.write(selected_assets)
 
+# Exibir os pesos otimizados para os ativos
+weights_optimal_series = pd.Series(weights_optimal, index=selected_assets.index)
+st.write("Pesos otimizados para cada ativo:")
+st.write(weights_optimal_series)
+
 # Calcular o desempenho esperado da carteira
-performance = ef.portfolio_performance()
-st.write(f"Retorno esperado: {performance[0]:.2f}%")
+performance = ef_clean.portfolio_performance()
+st.write(f"Retorno esperado da carteira: {performance[0]:.2f}%")
 st.write(f"Risco (Desvio Padrão): {performance[1]:.2f}%")
 st.write(f"Índice de Sharpe: {performance[2]:.2f}")
 
-# Exibir um gráfico da carteira ótima
-st.bar_chart(selected_assets)
-
+# Exibir um gráfico da carteira ótima com os pesos
+st.bar_chart(weights_optimal_series)
