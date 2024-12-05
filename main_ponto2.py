@@ -36,7 +36,7 @@ num_assets = st.number_input("Quantos ativos você deseja na sua carteira?", min
 st.write("Baixando dados históricos dos ativos...")
 
 # Baixar os dados históricos (ajustados) de todos os ativos do universo
-data = yf.download(list(assets_universe.keys()), start="2020-01-01", end="2024-01-01")['Adj Close']
+data = yf.download(list(assets_universe.keys()), start="2023-01-01", end="2024-01-01")['Adj Close']
 
 # Calcular os retornos esperados e a matriz de covariância
 mean_returns = expected_returns.mean_historical_return(data)
