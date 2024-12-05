@@ -4,12 +4,18 @@ import numpy as np
 import pandas as pd
 from pypfopt import expected_returns, risk_models, EfficientFrontier
 
-# Defina o universo de ativos (pode incluir ações, criptomoedas, etc.)
+# Defina o universo de ativos por grupo
 assets_universe = {
-    'AAPL': 'Apple', 'MSFT': 'Microsoft', 'TSLA': 'Tesla',
-    'GOOG': 'Alphabet', 'AMZN': 'Amazon', 'SPY': 'S&P 500 ETF',
-    'BTC-USD': 'Bitcoin', 'ETH-USD': 'Ethereum', 'NVDA': 'NVIDIA', 'META': 'Meta'
+    'AAPL': ('Apple', 'ações', 'americano'), 'MSFT': ('Microsoft', 'ações', 'americano'), 'TSLA': ('Tesla', 'ações', 'americano'),
+    'GOOG': ('Alphabet', 'ações', 'americano'), 'AMZN': ('Amazon', 'ações', 'americano'), 'SPY': ('S&P 500 ETF', 'ações', 'americano'),
+    'BTC-USD': ('Bitcoin', 'criptomoedas', ''), 'ETH-USD': ('Ethereum', 'criptomoedas', ''),
+    'NVDA': ('NVIDIA', 'ações', 'americano'), 'META': ('Meta', 'ações', 'americano')
 }
+
+# Grupos definidos (considerando que a entrada de cada ativo tem o nome, o tipo e a origem)
+cryptos = ['BTC-USD', 'ETH-USD']
+stocks_usa = ['AAPL', 'MSFT', 'TSLA', 'GOOG', 'AMZN', 'SPY', 'NVDA', 'META']
+# Os outros grupos (renda fixa, ações brasileiras, etc.) precisam ser adicionados ao universo conforme necessário.
 
 # Entrada do usuário para o número de ativos na carteira
 num_assets = st.number_input("Quantos ativos você deseja na sua carteira?", min_value=1, max_value=10, value=3)
@@ -24,36 +30,61 @@ data = yf.download(list(assets_universe.keys()), start="2020-01-01", end="2024-0
 mean_returns = expected_returns.mean_historical_return(data)
 cov_matrix = risk_models.sample_cov(data)
 
-# Criar o objeto Efficient Frontier
-ef = EfficientFrontier(mean_returns, cov_matrix)
+# Função para otimizar a carteira com a restrição de ter exatamente 2 ativos por grupo
+def optimize_portfolio(mean_returns, cov_matrix, num_assets):
+    # Defina os grupos de ativos
+    groups = {
+        'criptomoedas': cryptos,
+        'ações_americanas': stocks_usa,
+        # Adicione outros grupos aqui, como ações brasileiras e de outros mercados
+    }
 
-# Maximizar o Índice de Sharpe (com restrição de número de ativos)
-# Primeiramente, calcular a carteira ótima com todos os ativos
-weights_all_assets = ef.max_sharpe()
+    selected_assets = []
 
-# Ordenar os ativos por peso e escolher os 'num_assets' mais relevantes
-sorted_weights = pd.Series(weights_all_assets).sort_values(ascending=False)
+    # Selecionar 2 ativos de cada grupo, se disponível
+    for group, tickers in groups.items():
+        tickers_in_group = mean_returns[tickers].index  # ativos do grupo
+        if len(tickers_in_group) > 2:
+            selected_assets.extend(tickers_in_group[:2])  # Selecionar 2 ativos
 
-# Selecionar apenas os 'num_assets' melhores ativos com base no peso
-selected_assets = sorted_weights.head(num_assets)
+    # Verifique se temos ativos suficientes
+    if len(selected_assets) < num_assets:
+        raise ValueError(f"Não há ativos suficientes para selecionar {num_assets} ativos com 2 ativos por grupo.")
 
-# Normalizar os pesos para garantir que a soma seja 1
-total_weight = selected_assets.sum()
-normalized_weights = selected_assets / total_weight
+    # Agora que temos os ativos selecionados, calcule a carteira ótima com esses ativos
+    selected_data = data[selected_assets]
+    selected_mean_returns = mean_returns[selected_assets]
+    selected_cov_matrix = cov_matrix.loc[selected_assets, selected_assets]
 
-# Filtrar ativos que têm peso menor que 0.0001
-normalized_weights = normalized_weights[normalized_weights >= 0.0001]
+    # Crie um objeto EfficientFrontier com os ativos selecionados
+    ef = EfficientFrontier(selected_mean_returns, selected_cov_matrix)
+    
+    # Maximizar o Índice de Sharpe
+    weights = ef.max_sharpe()
 
-# Se houver ativos suficientes para compor a carteira
-if len(normalized_weights) >= num_assets:  # Garantir que tenhamos pelo menos 'num_assets' ativos
-    # Exibir os ativos selecionados e os pesos normalizados
-    st.write(f"Ativos selecionados para a carteira ({len(normalized_weights)} ativos):")
-    st.write(normalized_weights)
+    # Ordenar os ativos por peso
+    sorted_weights = pd.Series(weights).sort_values(ascending=False)
 
-    # Recalcular o desempenho esperado da carteira com os pesos normalizados
-    ef = EfficientFrontier(mean_returns[normalized_weights.index], cov_matrix.loc[normalized_weights.index, normalized_weights.index])
-    ef_weights = normalized_weights.values  # Pesos normalizados
-    ef.set_weights(dict(zip(normalized_weights.index, ef_weights)))  # Definir pesos para o EfficientFrontier
+    # Selecionar os 'num_assets' melhores ativos com base nos pesos
+    selected_assets_weights = sorted_weights.head(num_assets)
+
+    # Normalizar os pesos para garantir que a soma seja 1
+    total_weight = selected_assets_weights.sum()
+    normalized_weights = selected_assets_weights / total_weight
+
+    return normalized_weights
+
+# Executar a otimização
+try:
+    optimized_weights = optimize_portfolio(mean_returns, cov_matrix, num_assets)
+
+    # Exibir os ativos selecionados e os pesos
+    st.write(f"Ativos selecionados para a carteira ({num_assets} ativos):")
+    st.write(optimized_weights)
+
+    # Criar um novo objeto Efficient Frontier apenas com os ativos selecionados
+    ef = EfficientFrontier(mean_returns[optimized_weights.index], cov_matrix.loc[optimized_weights.index, optimized_weights.index])
+    ef.set_weights(dict(zip(optimized_weights.index, optimized_weights.values())))
 
     # Calcular o desempenho esperado da carteira
     performance = ef.portfolio_performance()
@@ -63,5 +94,6 @@ if len(normalized_weights) >= num_assets:  # Garantir que tenhamos pelo menos 'n
 
     # Exibir um gráfico da carteira ótima com os pesos normalizados
     st.bar_chart(normalized_weights)
-else:
-    st.write(f"Não há ativos suficientes com peso significativo para formar uma carteira de {num_assets} ativos.")
+
+except Exception as e:
+    st.error(f"Erro: {str(e)}")
