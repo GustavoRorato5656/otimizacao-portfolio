@@ -77,7 +77,7 @@ try:
 
     # Criar um novo objeto Efficient Frontier apenas com os ativos selecionados
     ef = EfficientFrontier(mean_returns[normalized_weights.index], cov_matrix.loc[normalized_weights.index, normalized_weights.index])
-    ef.set_weights(dict(zip(normalized_weights.index, normalized_weights.values())))
+    ef.set_weights(dict(zip(normalized_weights.index, normalized_weights.values)))  # Correção aqui: Não usar 'values()' como se fosse uma função
 
     # Calcular o desempenho esperado da carteira
     performance = ef.portfolio_performance()
