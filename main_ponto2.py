@@ -3,6 +3,7 @@ import yfinance as yf
 import numpy as np
 import pandas as pd
 from pypfopt import expected_returns, risk_models, EfficientFrontier
+from random import sample
 
 # Defina o universo de ativos (pode incluir ações, criptomoedas, etc.)
 assets_universe = {
@@ -24,36 +25,26 @@ data = yf.download(list(assets_universe.keys()), start="2020-01-01", end="2024-0
 mean_returns = expected_returns.mean_historical_return(data)
 cov_matrix = risk_models.sample_cov(data)
 
-# Criar o objeto Efficient Frontier
-ef = EfficientFrontier(mean_returns, cov_matrix)
+# Selecionar aleatoriamente os ativos para a carteira com o número de ativos desejado
+selected_assets = sample(list(assets_universe.keys()), num_assets)
 
-# Maximizar o Índice de Sharpe (sem restrições no número de ativos)
-weights_all_assets = ef.max_sharpe()
-
-# Ordenar os ativos por peso
-sorted_weights = pd.Series(weights_all_assets).sort_values(ascending=False)
-
-# Selecionar os 'num_assets' mais relevantes
-selected_assets = sorted_weights.head(num_assets)
-
-# Criar uma carteira considerando o número de ativos selecionados
-ef = EfficientFrontier(mean_returns, cov_matrix)
-
-# Forçar a otimização considerando apenas os ativos selecionados
-ef_clean = EfficientFrontier(mean_returns[selected_assets.index], cov_matrix.loc[selected_assets.index, selected_assets.index])
-weights_optimal = ef_clean.max_sharpe()
-
-# Exibir os ativos selecionados e seus pesos
+# Exibir os ativos selecionados
 st.write(f"Ativos selecionados para a carteira ({num_assets} ativos):")
-st.write(selected_assets)
+st.write([assets_universe[ticker] for ticker in selected_assets])
+
+# Criar o objeto Efficient Frontier para otimização com os ativos selecionados
+ef = EfficientFrontier(mean_returns[selected_assets], cov_matrix.loc[selected_assets, selected_assets])
+
+# Maximizar o Índice de Sharpe (com os ativos selecionados)
+weights_optimal = ef.max_sharpe()
 
 # Exibir os pesos otimizados para os ativos
-weights_optimal_series = pd.Series(weights_optimal, index=selected_assets.index)
+weights_optimal_series = pd.Series(weights_optimal, index=selected_assets)
 st.write("Pesos otimizados para cada ativo:")
 st.write(weights_optimal_series)
 
 # Calcular o desempenho esperado da carteira
-performance = ef_clean.portfolio_performance()
+performance = ef.portfolio_performance()
 st.write(f"Retorno esperado da carteira: {performance[0]:.2f}%")
 st.write(f"Risco (Desvio Padrão): {performance[1]:.2f}%")
 st.write(f"Índice de Sharpe: {performance[2]:.2f}")
