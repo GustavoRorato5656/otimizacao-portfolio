@@ -41,20 +41,27 @@ selected_assets = sorted_weights.head(num_assets)
 total_weight = selected_assets.sum()
 normalized_weights = selected_assets / total_weight
 
-# Exibir os ativos selecionados e os pesos normalizados
-st.write(f"Ativos selecionados para a carteira ({num_assets} ativos):")
-st.write(normalized_weights)
+# Filtrar ativos que têm peso menor que 0.0001
+normalized_weights = normalized_weights[normalized_weights >= 0.0001]
 
-# Calcular o desempenho esperado da carteira com os pesos normalizados
-ef = EfficientFrontier(mean_returns[selected_assets.index], cov_matrix.loc[selected_assets.index, selected_assets.index])
-ef_weights = normalized_weights.values  # Pesos normalizados
-ef.set_weights(dict(zip(selected_assets.index, ef_weights)))  # Definir pesos para o EfficientFrontier
+# Se houver ativos suficientes para compor a carteira
+if len(normalized_weights) > 0:
+    # Exibir os ativos selecionados e os pesos normalizados
+    st.write(f"Ativos selecionados para a carteira ({len(normalized_weights)} ativos):")
+    st.write(normalized_weights)
 
-# Calcular o desempenho esperado da carteira
-performance = ef.portfolio_performance()
-st.write(f"Retorno esperado: {performance[0]:.2f}%")
-st.write(f"Risco (Desvio Padrão): {performance[1]:.2f}%")
-st.write(f"Índice de Sharpe: {performance[2]:.2f}")
+    # Recalcular o desempenho esperado da carteira com os pesos normalizados
+    ef = EfficientFrontier(mean_returns[normalized_weights.index], cov_matrix.loc[normalized_weights.index, normalized_weights.index])
+    ef_weights = normalized_weights.values  # Pesos normalizados
+    ef.set_weights(dict(zip(normalized_weights.index, ef_weights)))  # Definir pesos para o EfficientFrontier
 
-# Exibir um gráfico da carteira ótima com os pesos normalizados
-st.bar_chart(normalized_weights)
+    # Calcular o desempenho esperado da carteira
+    performance = ef.portfolio_performance()
+    st.write(f"Retorno esperado: {performance[0]:.2f}%")
+    st.write(f"Risco (Desvio Padrão): {performance[1]:.2f}%")
+    st.write(f"Índice de Sharpe: {performance[2]:.2f}")
+
+    # Exibir um gráfico da carteira ótima com os pesos normalizados
+    st.bar_chart(normalized_weights)
+else:
+    st.write("Não há ativos suficientes com peso significativo para formar a carteira.")
