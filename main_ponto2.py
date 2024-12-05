@@ -51,10 +51,15 @@ def optimize_portfolio(mean_returns, cov_matrix, num_assets):
     ef = EfficientFrontier(selected_mean_returns, selected_cov_matrix)
     
     # Maximizar o Índice de Sharpe
-    weights = ef.max_sharpe()
+    weights = ef.max_sharpe()  # Aqui não é necessário chamá-lo como uma função
+    return weights  # Retorna os pesos otimizados diretamente
 
-    # Ordenar os ativos por peso
-    sorted_weights = pd.Series(weights).sort_values(ascending=False)
+# Executar a otimização
+try:
+    optimized_weights = optimize_portfolio(mean_returns, cov_matrix, num_assets)
+
+    # Ordenar os pesos e selecionar os melhores ativos
+    sorted_weights = pd.Series(optimized_weights).sort_values(ascending=False)
 
     # Selecionar os 'num_assets' melhores ativos com base nos pesos
     selected_assets_weights = sorted_weights.head(num_assets)
@@ -63,19 +68,13 @@ def optimize_portfolio(mean_returns, cov_matrix, num_assets):
     total_weight = selected_assets_weights.sum()
     normalized_weights = selected_assets_weights / total_weight
 
-    return normalized_weights
-
-# Executar a otimização
-try:
-    optimized_weights = optimize_portfolio(mean_returns, cov_matrix, num_assets)
-
     # Exibir os ativos selecionados e os pesos
     st.write(f"Ativos selecionados para a carteira ({num_assets} ativos):")
-    st.write(optimized_weights)
+    st.write(normalized_weights)
 
     # Criar um novo objeto Efficient Frontier apenas com os ativos selecionados
-    ef = EfficientFrontier(mean_returns[optimized_weights.index], cov_matrix.loc[optimized_weights.index, optimized_weights.index])
-    ef.set_weights(dict(zip(optimized_weights.index, optimized_weights.values())))
+    ef = EfficientFrontier(mean_returns[normalized_weights.index], cov_matrix.loc[normalized_weights.index, normalized_weights.index])
+    ef.set_weights(dict(zip(normalized_weights.index, normalized_weights.values())))
 
     # Calcular o desempenho esperado da carteira
     performance = ef.portfolio_performance()
