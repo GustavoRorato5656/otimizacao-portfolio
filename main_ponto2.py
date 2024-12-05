@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from pypfopt import expected_returns, risk_models, EfficientFrontier
 
-# Defina o universo de ativos por grupo
+# Defina o universo de ativos por grupo (com diferentes tipos de ativos)
 assets_universe = {
     'AAPL': ('Apple', 'ações', 'americano'), 'MSFT': ('Microsoft', 'ações', 'americano'), 'TSLA': ('Tesla', 'ações', 'americano'),
     'GOOG': ('Alphabet', 'ações', 'americano'), 'AMZN': ('Amazon', 'ações', 'americano'), 'SPY': ('S&P 500 ETF', 'ações', 'americano'),
@@ -18,12 +18,11 @@ assets_universe = {
     'PDD': ('Pinduoduo', 'ações', 'chinês'), 'JD': ('JD.com', 'ações', 'chinês')
 }
 
-# Grupos definidos (considerando que a entrada de cada ativo tem o nome, o tipo e a origem)
+# Grupos de ativos
 cryptos = ['BTC-USD', 'ETH-USD']
 stocks_usa = ['AAPL', 'MSFT', 'TSLA', 'GOOG', 'AMZN', 'SPY', 'NVDA', 'META']
 stocks_brazil = ['PETR4.SA', 'VALE3.SA', 'ITUB4.SA', 'BBDC3.SA']
 stocks_china = ['BABA', 'TCEHY', 'PDD', 'JD']
-# Adicione outros grupos aqui conforme necessário.
 
 # Entrada do usuário para o número de ativos na carteira
 num_assets = st.number_input("Quantos ativos você deseja na sua carteira?", min_value=1, max_value=10, value=3)
@@ -38,31 +37,15 @@ data = yf.download(list(assets_universe.keys()), start="2020-01-01", end="2024-0
 mean_returns = expected_returns.mean_historical_return(data)
 cov_matrix = risk_models.sample_cov(data)
 
-# Função para otimizar a carteira com a restrição de ter exatamente 2 ativos de cada grupo
+# Função para otimizar a carteira
 def optimize_portfolio(mean_returns, cov_matrix, num_assets):
-    # Defina os grupos de ativos
-    groups = {
-        'criptomoedas': cryptos,
-        'ações_americanas': stocks_usa,
-        'ações_brasileiras': stocks_brazil,
-        'ações_chinesas': stocks_china,
-    }
+    # Seleciona os ativos disponíveis
+    all_assets = cryptos + stocks_usa + stocks_brazil + stocks_china
 
-    selected_assets = []
-
-    # Selecionar 2 ativos de cada grupo
-    for group, tickers in groups.items():
-        if len(tickers) >= 2:
-            selected_assets.extend(tickers[:2])  # Seleciona 2 ativos de cada grupo
-
-    # Verifique se temos ativos suficientes
-    if len(selected_assets) < num_assets:
-        raise ValueError(f"Não há ativos suficientes para selecionar {num_assets} ativos com 2 ativos por grupo.")
-
-    # Agora que temos os ativos selecionados, calcule a carteira ótima com esses ativos
-    selected_data = data[selected_assets]
-    selected_mean_returns = mean_returns[selected_assets]
-    selected_cov_matrix = cov_matrix.loc[selected_assets, selected_assets]
+    # Selecione o número desejado de ativos
+    selected_data = data[all_assets]
+    selected_mean_returns = mean_returns[all_assets]
+    selected_cov_matrix = cov_matrix.loc[all_assets, all_assets]
 
     # Crie um objeto EfficientFrontier com os ativos selecionados
     ef = EfficientFrontier(selected_mean_returns, selected_cov_matrix)
