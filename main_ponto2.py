@@ -31,7 +31,10 @@ def optimize_portfolio(data, num_assets):
     top_assets = sorted_weights[:num_assets]
     top_weights = {asset: weight for asset, weight in top_assets}
     
-    return top_weights
+    # Calcular métricas de desempenho
+    performance = ef.portfolio_performance(verbose=True)
+    
+    return top_weights, performance
 
 # Função para criar o dashboard
 def create_dashboard():
@@ -50,11 +53,16 @@ def create_dashboard():
         data = get_data(tickers, start_date, end_date)
         
         # Otimizar portfólio
-        top_weights = optimize_portfolio(data, num_assets)
+        top_weights, performance = optimize_portfolio(data, num_assets)
         
         # Exibir resultados
         st.write("Pesos Ótimos:", top_weights)
         st.bar_chart(pd.DataFrame.from_dict(top_weights, orient='index', columns=['Peso']))
+        
+        # Exibir métricas de desempenho
+        st.write(f"Retorno Esperado: {performance[0]:.2%}")
+        st.write(f"Risco (Desvio Padrão): {performance[1]:.2%}")
+        st.write(f"Índice de Sharpe: {performance[2]:.2f}")
 
 if __name__ == "__main__":
     create_dashboard()
