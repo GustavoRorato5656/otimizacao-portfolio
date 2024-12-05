@@ -1,8 +1,4 @@
-import streamlit as st
-import yfinance as yf
-import pandas as pd
-import numpy as np
-from pypfopt import expected_returns, risk_models, EfficientFrontier
+from pypfopt import EfficientFrontier, expected_returns, risk_models, objective_functions
 
 # Título do aplicativo
 st.title("Otimização de Portfólio com Sharpe")
@@ -27,11 +23,11 @@ if st.button("Calcular a Carteira Ótima"):
 
     # 3. Cálculo dos retornos esperados e matriz de covariância
     returns = expected_returns.mean_historical_return(data)
-    cov_matrix = risk_models.sample_cov(data)
+    cov_matrix = risk_models.CovarianceShrinkage(data).ledoit()  # Usando regularização Ledoit
 
     # 4. Otimização do portfólio usando PyPortfolioOpt
     ef = EfficientFrontier(returns, cov_matrix)
-    weights = ef.max_sharpe()  # Maximizar o Índice de Sharpe
+    weights = ef.max_sharpe(solver="ECOS")  # Usando o solver ECOS
 
     # Resultados
     st.write("Pesos ótimos para cada ativo com o objetivo de maximizar o Índice de Sharpe:")
@@ -46,40 +42,3 @@ if st.button("Calcular a Carteira Ótima"):
     # Exibindo gráfico da composição do portfólio
     st.write("Composição do portfólio:")
     st.bar_chart(weights)
-
-    # 5. Sugestão de uma carteira com número específico de ativos
-    num_assets = st.number_input("Número de ativos na carteira:", min_value=1, max_value=len(tickers_list), value=3)
-    st.write(f"Calculando a melhor carteira com {num_assets} ativos...")
-
-    # Gerando combinações possíveis de ativos
-    from itertools import combinations
-    asset_combinations = list(combinations(tickers_list, num_assets))
-
-    # Calculando a carteira ótima para cada combinação
-    best_sharpe = -np.inf
-    best_combination = None
-    best_weights = None
-
-    for combination in asset_combinations:
-        subset_data = data[list(combination)]
-        subset_returns = expected_returns.mean_historical_return(subset_data)
-        subset_cov_matrix = risk_models.sample_cov(subset_data)
-        
-        ef_subset = EfficientFrontier(subset_returns, subset_cov_matrix)
-        subset_weights = ef_subset.max_sharpe()
-        subset_performance = ef_subset.portfolio_performance()
-
-        if subset_performance[2] > best_sharpe:  # Comparar o Índice de Sharpe
-            best_sharpe = subset_performance[2]
-            best_combination = combination
-            best_weights = subset_weights
-
-    # Exibindo a melhor combinação
-    st.write(f"A melhor carteira com {num_assets} ativos é composta por:")
-    st.write(best_combination)
-    st.write("Pesos dessa carteira:")
-    st.write(best_weights)
-
-    # Exibindo gráfico da carteira ótima
-    st.write(f"Composição da carteira ótima com {num_assets} ativos:")
-    st.bar_chart(best_weights)
