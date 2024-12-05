@@ -9,13 +9,21 @@ assets_universe = {
     'AAPL': ('Apple', 'ações', 'americano'), 'MSFT': ('Microsoft', 'ações', 'americano'), 'TSLA': ('Tesla', 'ações', 'americano'),
     'GOOG': ('Alphabet', 'ações', 'americano'), 'AMZN': ('Amazon', 'ações', 'americano'), 'SPY': ('S&P 500 ETF', 'ações', 'americano'),
     'BTC-USD': ('Bitcoin', 'criptomoedas', ''), 'ETH-USD': ('Ethereum', 'criptomoedas', ''),
-    'NVDA': ('NVIDIA', 'ações', 'americano'), 'META': ('Meta', 'ações', 'americano')
+    'NVDA': ('NVIDIA', 'ações', 'americano'), 'META': ('Meta', 'ações', 'americano'),
+    # Ações brasileiras (exemplos)
+    'PETR4.SA': ('Petrobras', 'ações', 'brasileiro'), 'VALE3.SA': ('Vale', 'ações', 'brasileiro'),
+    'ITUB4.SA': ('Itaú Unibanco', 'ações', 'brasileiro'), 'BBDC3.SA': ('Bradesco', 'ações', 'brasileiro'),
+    # Ações chinesas (exemplos)
+    'BABA': ('Alibaba', 'ações', 'chinês'), 'TCEHY': ('Tencent', 'ações', 'chinês'),
+    'PDD': ('Pinduoduo', 'ações', 'chinês'), 'JD': ('JD.com', 'ações', 'chinês')
 }
 
 # Grupos definidos (considerando que a entrada de cada ativo tem o nome, o tipo e a origem)
 cryptos = ['BTC-USD', 'ETH-USD']
 stocks_usa = ['AAPL', 'MSFT', 'TSLA', 'GOOG', 'AMZN', 'SPY', 'NVDA', 'META']
-# Os outros grupos (renda fixa, ações brasileiras, etc.) precisam ser adicionados ao universo conforme necessário.
+stocks_brazil = ['PETR4.SA', 'VALE3.SA', 'ITUB4.SA', 'BBDC3.SA']
+stocks_china = ['BABA', 'TCEHY', 'PDD', 'JD']
+# Adicione outros grupos aqui conforme necessário.
 
 # Entrada do usuário para o número de ativos na carteira
 num_assets = st.number_input("Quantos ativos você deseja na sua carteira?", min_value=1, max_value=10, value=3)
@@ -30,22 +38,22 @@ data = yf.download(list(assets_universe.keys()), start="2020-01-01", end="2024-0
 mean_returns = expected_returns.mean_historical_return(data)
 cov_matrix = risk_models.sample_cov(data)
 
-# Função para otimizar a carteira com a restrição de ter exatamente 2 ativos por grupo
+# Função para otimizar a carteira com a restrição de ter exatamente 2 ativos de cada grupo
 def optimize_portfolio(mean_returns, cov_matrix, num_assets):
     # Defina os grupos de ativos
     groups = {
         'criptomoedas': cryptos,
         'ações_americanas': stocks_usa,
-        # Adicione outros grupos aqui, como ações brasileiras e de outros mercados
+        'ações_brasileiras': stocks_brazil,
+        'ações_chinesas': stocks_china,
     }
 
     selected_assets = []
 
-    # Selecionar 2 ativos de cada grupo, se disponível
+    # Selecionar 2 ativos de cada grupo
     for group, tickers in groups.items():
-        tickers_in_group = mean_returns[tickers].index  # ativos do grupo
-        if len(tickers_in_group) > 2:
-            selected_assets.extend(tickers_in_group[:2])  # Selecionar 2 ativos
+        if len(tickers) >= 2:
+            selected_assets.extend(tickers[:2])  # Seleciona 2 ativos de cada grupo
 
     # Verifique se temos ativos suficientes
     if len(selected_assets) < num_assets:
