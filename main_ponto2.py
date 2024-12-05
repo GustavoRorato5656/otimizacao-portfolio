@@ -37,16 +37,20 @@ sorted_weights = pd.Series(weights_all_assets).sort_values(ascending=False)
 # Selecionar apenas os 'num_assets' melhores ativos com base no peso
 selected_assets = sorted_weights.head(num_assets)
 
-# Exibir os ativos selecionados e os pesos
+# Normalizar os pesos para garantir que a soma seja 1
+total_weight = selected_assets.sum()
+normalized_weights = selected_assets / total_weight
+
+# Exibir os ativos selecionados e os pesos normalizados
 st.write(f"Ativos selecionados para a carteira ({num_assets} ativos):")
-st.write(selected_assets)
+st.write(normalized_weights)
 
 # Calcular o desempenho esperado da carteira
+ef = EfficientFrontier(mean_returns[selected_assets.index], cov_matrix.loc[selected_assets.index, selected_assets.index])
 performance = ef.portfolio_performance()
 st.write(f"Retorno esperado: {performance[0]:.2f}%")
 st.write(f"Risco (Desvio Padrão): {performance[1]:.2f}%")
 st.write(f"Índice de Sharpe: {performance[2]:.2f}")
 
-# Exibir um gráfico da carteira ótima
-st.bar_chart(selected_assets)
-
+# Exibir um gráfico da carteira ótima com os pesos normalizados
+st.bar_chart(normalized_weights)
