@@ -1,97 +1,60 @@
-import streamlit as st
 import yfinance as yf
-import numpy as np
+from pypfopt import EfficientFrontier, risk_models, expected_returns
+import streamlit as st
 import pandas as pd
-from pypfopt import expected_returns, risk_models, EfficientFrontier
+import numpy as np
 
-# Defina o universo de ativos por grupo (incluindo renda fixa brasileira)
-assets_universe = {
-    'AAPL': ('Apple', 'ações', 'americano'), 'MSFT': ('Microsoft', 'ações', 'americano'), 'TSLA': ('Tesla', 'ações', 'americano'),
-    'GOOG': ('Alphabet', 'ações', 'americano'), 'AMZN': ('Amazon', 'ações', 'americano'), 'SPY': ('S&P 500 ETF', 'ações', 'americano'),
-    'BTC-USD': ('Bitcoin', 'criptomoedas', ''), 'ETH-USD': ('Ethereum', 'criptomoedas', ''),
-    'NVDA': ('NVIDIA', 'ações', 'americano'), 'META': ('Meta', 'ações', 'americano'),
-    # Ações brasileiras
-    'PETR4.SA': ('Petrobras', 'ações', 'brasileiro'), 'VALE3.SA': ('Vale', 'ações', 'brasileiro'),
-    'ITUB4.SA': ('Itaú Unibanco', 'ações', 'brasileiro'), 'BBDC3.SA': ('Bradesco', 'ações', 'brasileiro'),
-    # Ações chinesas
-    'BABA': ('Alibaba', 'ações', 'chinês'), 'TCEHY': ('Tencent', 'ações', 'chinês'),
-    'PDD': ('Pinduoduo', 'ações', 'chinês'), 'JD': ('JD.com', 'ações', 'chinês'),
-    # ETFs de Renda Fixa Brasileira
-    'IMAB11.SA': ('IMAB11 - ETF de Renda Fixa Brasileira', 'renda fixa', 'brasileiro'),  # ETF de títulos do Tesouro IPCA
-    'TBLL11.SA': ('TBLL11 - ETF de Tesouro Prefixado', 'renda fixa', 'brasileiro'),  # ETF de títulos prefixados
-    'FIXA11.SA': ('FIXA11 - ETF de Renda Fixa', 'renda fixa', 'brasileiro'),  # ETF de fundos de renda fixa
+# Definir o universo de ativos
+UNIVERSO_ATIVOS = {
+    "Criptomoedas": ["BTC-USD", "ETH-USD"],
+    "Renda Fixa Brasil": ["IRFM11.SA", "IMAB11.SA"],
+    "Ações Brasil": ["PETR4.SA", "VALE3.SA"],
+    "Ações EUA": ["AAPL", "MSFT"],
+    "Ações China": ["BABA", "JD"]
 }
 
-# Grupos de ativos
-cryptos = ['BTC-USD', 'ETH-USD']
-stocks_usa = ['AAPL', 'MSFT', 'TSLA', 'GOOG', 'AMZN', 'SPY', 'NVDA', 'META']
-stocks_brazil = ['PETR4.SA', 'VALE3.SA', 'ITUB4.SA', 'BBDC3.SA']
-stocks_china = ['BABA', 'TCEHY', 'PDD', 'JD']
-bonds_brazil = ['IMAB11.SA', 'TBLL11.SA', 'FIXA11.SA']  # ETFs de Renda Fixa Brasileira
+# Função para obter dados históricos
+def get_data(tickers, start_date, end_date):
+    data = yf.download(tickers, start=start_date, end=end_date)
+    return data['Adj Close']
 
-# Entrada do usuário para o número de ativos na carteira
-num_assets = st.number_input("Quantos ativos você deseja na sua carteira?", min_value=1, max_value=10, value=3)
-
-# Baixar os dados históricos para todos os ativos do universo
-st.write("Baixando dados históricos dos ativos...")
-
-# Baixar os dados históricos (ajustados) de todos os ativos do universo
-data = yf.download(list(assets_universe.keys()), start="2023-01-01", end="2024-01-01")['Adj Close']
-
-# Calcular os retornos esperados e a matriz de covariância
-mean_returns = expected_returns.mean_historical_return(data)
-cov_matrix = risk_models.sample_cov(data)
-
-# Função para otimizar a carteira
-def optimize_portfolio(mean_returns, cov_matrix, num_assets):
-    # Seleciona os ativos disponíveis (criptomoedas, ações e renda fixa brasileira)
-    all_assets = cryptos + stocks_usa + stocks_brazil + stocks_china + bonds_brazil
-
-    # Selecione o número desejado de ativos
-    selected_data = data[all_assets]
-    selected_mean_returns = mean_returns[all_assets]
-    selected_cov_matrix = cov_matrix.loc[all_assets, all_assets]
-
-    # Crie um objeto EfficientFrontier com os ativos selecionados
-    ef = EfficientFrontier(selected_mean_returns, selected_cov_matrix)
+# Função para otimização de portfólio
+def optimize_portfolio(data, num_assets):
+    mu = expected_returns.mean_historical_return(data)
+    S = risk_models.sample_cov(data)
+    ef = EfficientFrontier(mu, S)
+    weights = ef.max_sharpe()
+    cleaned_weights = ef.clean_weights()
     
-    # Maximizar o Índice de Sharpe
-    ef.max_sharpe()  # Aqui ele já calcula os pesos otimizados
+    # Selecionar os ativos com os maiores pesos
+    sorted_weights = sorted(cleaned_weights.items(), key=lambda x: x[1], reverse=True)
+    top_assets = sorted_weights[:num_assets]
+    top_weights = {asset: weight for asset, weight in top_assets}
+    
+    return top_weights
 
-    # Obter os pesos otimizados diretamente após a maximização
-    weights = ef.clean_weights()  # Limpa os pesos que são 0
-    return weights
+# Função para criar o dashboard
+def create_dashboard():
+    st.title("Sugestão de Carteira Ótima")
+    
+    # Seleção do número de ativos
+    num_assets = st.number_input("Número de ativos na carteira", min_value=1, max_value=len(UNIVERSO_ATIVOS), value=3)
+    
+    # Seleção do horizonte de tempo
+    start_date = st.date_input("Data de início")
+    end_date = st.date_input("Data de término")
+    
+    if st.button("Calcular"):
+        # Obter dados históricos para todos os ativos no universo
+        tickers = [ticker for sublist in UNIVERSO_ATIVOS.values() for ticker in sublist]
+        data = get_data(tickers, start_date, end_date)
+        
+        # Otimizar portfólio
+        top_weights = optimize_portfolio(data, num_assets)
+        
+        # Exibir resultados
+        st.write("Pesos Ótimos:", top_weights)
+        st.bar_chart(pd.DataFrame.from_dict(top_weights, orient='index', columns=['Peso']))
 
-# Executar a otimização
-try:
-    optimized_weights = optimize_portfolio(mean_returns, cov_matrix, num_assets)
-
-    # Ordenar os pesos e selecionar os melhores ativos
-    sorted_weights = pd.Series(optimized_weights).sort_values(ascending=False)
-
-    # Selecionar os 'num_assets' melhores ativos com base nos pesos
-    selected_assets_weights = sorted_weights.head(num_assets)
-
-    # Normalizar os pesos para garantir que a soma seja 1
-    total_weight = selected_assets_weights.sum()
-    normalized_weights = selected_assets_weights / total_weight
-
-    # Exibir os ativos selecionados e os pesos
-    st.write(f"Ativos selecionados para a carteira ({num_assets} ativos):")
-    st.write(normalized_weights)
-
-    # Criar um novo objeto Efficient Frontier apenas com os ativos selecionados
-    ef = EfficientFrontier(mean_returns[normalized_weights.index], cov_matrix.loc[normalized_weights.index, normalized_weights.index])
-    ef.set_weights(dict(zip(normalized_weights.index, normalized_weights.values)))  # Correção aqui: Não usar 'values()' como se fosse uma função
-
-    # Calcular o desempenho esperado da carteira
-    performance = ef.portfolio_performance()
-    st.write(f"Retorno esperado: {performance[0]:.2f}%")
-    st.write(f"Risco (Desvio Padrão): {performance[1]:.2f}%")
-    st.write(f"Índice de Sharpe: {performance[2]:.2f}")
-
-    # Exibir um gráfico da carteira ótima com os pesos normalizados
-    st.bar_chart(normalized_weights)
-
-except Exception as e:
-    st.error(f"Erro: {str(e)}")
+if __name__ == "__main__":
+    create_dashboard()
