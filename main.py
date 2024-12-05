@@ -14,7 +14,7 @@ if tickers:
     
     try:
         # Baixar os dados históricos de preços ajustados
-        data = yf.download(tickers_list, start="2010-01-01", end="2024-01-01")['Adj Close']
+        data = yf.download(tickers_list, start="2018-01-01", end="2024-01-01")['Adj Close']
         
         # Exibir os dados
         st.write("Dados históricos de preços de fechamento ajustados:")
