@@ -1,0 +1,5 @@
+streamlit
+PyPortfolioOpt
+yfinance
+matplotlib
+plotly
