@@ -39,7 +39,7 @@ def optimize_portfolio(data, num_assets):
 # Função para criar o dashboard
 def create_dashboard():
     st.title("Sugestão de Carteira Ótima")
-    
+    st.text("By: Guilherme Goya e Gustavo Rorato")
     # Seleção do número de ativos
     num_assets = st.number_input("Número de ativos na carteira", min_value=1, max_value=len(UNIVERSO_ATIVOS), value=3)
     
