@@ -38,6 +38,15 @@ ef = EfficientFrontier(mean_returns[selected_assets], cov_matrix.loc[selected_as
 # Maximizar o Índice de Sharpe (com os ativos selecionados)
 weights_optimal = ef.max_sharpe()
 
+# Verificar se algum ativo tem peso zero e forçar um peso mínimo
+for ticker in weights_optimal:
+    if weights_optimal[ticker] < 0.01:  # Se o peso for menor que 1%
+        weights_optimal[ticker] = 0.01  # Atribui um peso mínimo para garantir a diversificação
+
+# Normalizar os pesos para garantir que a soma seja 1
+total_weight = sum(weights_optimal.values())
+weights_optimal = {ticker: weight / total_weight for ticker, weight in weights_optimal.items()}
+
 # Exibir os pesos otimizados para os ativos
 weights_optimal_series = pd.Series(weights_optimal, index=selected_assets)
 st.write("Pesos otimizados para cada ativo:")
