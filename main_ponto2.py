@@ -51,8 +51,11 @@ def optimize_portfolio(mean_returns, cov_matrix, num_assets):
     ef = EfficientFrontier(selected_mean_returns, selected_cov_matrix)
     
     # Maximizar o Índice de Sharpe
-    weights = ef.max_sharpe()  # Aqui não é necessário chamá-lo como uma função
-    return weights  # Retorna os pesos otimizados diretamente
+    ef.max_sharpe()  # Aqui ele já calcula os pesos otimizados
+
+    # Obter os pesos otimizados diretamente após a maximização
+    weights = ef.clean_weights()  # Limpa os pesos que são 0
+    return weights
 
 # Executar a otimização
 try:
