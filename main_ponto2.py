@@ -27,35 +27,45 @@ cov_matrix = risk_models.sample_cov(data)
 # Criar o objeto Efficient Frontier
 ef = EfficientFrontier(mean_returns, cov_matrix)
 
-# Maximizar o Índice de Sharpe com o número de ativos especificado
-# Primeiramente, calcular a carteira ótima com todos os ativos
-weights_all_assets = ef.max_sharpe()
+# Função de otimização
+def optimize_portfolio(mean_returns, cov_matrix, num_assets):
+    try:
+        # Maximizar o Índice de Sharpe
+        ef = EfficientFrontier(mean_returns, cov_matrix)
+        weights = ef.max_sharpe()
 
-# Ordenar os ativos por peso
-sorted_weights = pd.Series(weights_all_assets).sort_values(ascending=False)
+        # Ordenar os ativos por peso
+        sorted_weights = pd.Series(weights).sort_values(ascending=False)
 
-# Selecionar os 'num_assets' melhores ativos com base nos pesos
-selected_assets = sorted_weights.head(num_assets)
+        # Selecionar os 'num_assets' melhores ativos com base nos pesos
+        selected_assets = sorted_weights.head(num_assets)
 
-# Normalizar os pesos para garantir que a soma seja 1
-total_weight = selected_assets.sum()
-normalized_weights = selected_assets / total_weight
+        # Normalizar os pesos para garantir que a soma seja 1
+        total_weight = selected_assets.sum()
+        normalized_weights = selected_assets / total_weight
 
-# Exibir os ativos selecionados e os pesos
-st.write(f"Ativos selecionados para a carteira ({num_assets} ativos):")
-st.write(normalized_weights)
+        return normalized_weights
 
-# Criar um novo objeto Efficient Frontier apenas com os ativos selecionados
-ef = EfficientFrontier(mean_returns[normalized_weights.index], cov_matrix.loc[normalized_weights.index, normalized_weights.index])
+    except Exception as e:
+        raise Exception("Otimização falhou. Tente novamente.") from e
 
-# Definir os pesos da carteira ótima com os ativos selecionados
-ef.set_weights(dict(zip(normalized_weights.index, normalized_weights.values)))
+# Executar a otimização
+try:
+    optimized_weights = optimize_portfolio(mean_returns, cov_matrix, num_assets)
 
-# Calcular o desempenho esperado da carteira
-performance = ef.portfolio_performance()
-st.write(f"Retorno esperado: {performance[0]:.2f}%")
-st.write(f"Risco (Desvio Padrão): {performance[1]:.2f}%")
-st.write(f"Índice de Sharpe: {performance[2]:.2f}")
+    # Exibir os ativos selecionados e os pesos
+    st.write(f"Ativos selecionados para a carteira ({num_assets} ativos):")
+    st.write(optimized_weights)
 
-# Exibir um gráfico da carteira ótima
-st.bar_chart(normalized_weights)
+    # Calcular o desempenho esperado da carteira
+    ef.set_weights(dict(zip(optimized_weights.index, optimized_weights.values())))
+    performance = ef.portfolio_performance()
+    st.write(f"Retorno esperado: {performance[0]:.2f}%")
+    st.write(f"Risco (Desvio Padrão): {performance[1]:.2f}%")
+    st.write(f"Índice de Sharpe: {performance[2]:.2f}")
+
+    # Exibir um gráfico da carteira ótima
+    st.bar_chart(optimized_weights)
+    
+except Exception as e:
+    st.error(str(e))
