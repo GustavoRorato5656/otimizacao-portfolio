@@ -27,7 +27,7 @@ cov_matrix = risk_models.sample_cov(data)
 # Criar o objeto Efficient Frontier
 ef = EfficientFrontier(mean_returns, cov_matrix)
 
-# Função de otimização
+# Função para otimizar a carteira com um número específico de ativos
 def optimize_portfolio(mean_returns, cov_matrix, num_assets):
     try:
         # Maximizar o Índice de Sharpe
@@ -40,11 +40,12 @@ def optimize_portfolio(mean_returns, cov_matrix, num_assets):
         # Selecionar os 'num_assets' melhores ativos com base nos pesos
         selected_assets = sorted_weights.head(num_assets)
 
-        # Normalizar os pesos para garantir que a soma seja 1
+        # Verificar se a soma dos pesos é igual a 1 e normalizar se necessário
         total_weight = selected_assets.sum()
-        normalized_weights = selected_assets / total_weight
+        if total_weight != 1:
+            selected_assets = selected_assets / total_weight
 
-        return normalized_weights
+        return selected_assets
 
     except Exception as e:
         raise Exception("Otimização falhou. Tente novamente.") from e
@@ -57,8 +58,10 @@ try:
     st.write(f"Ativos selecionados para a carteira ({num_assets} ativos):")
     st.write(optimized_weights)
 
-    # Calcular o desempenho esperado da carteira
+    # Criar um novo objeto Efficient Frontier apenas com os ativos selecionados
     ef.set_weights(dict(zip(optimized_weights.index, optimized_weights.values())))
+
+    # Calcular o desempenho esperado da carteira
     performance = ef.portfolio_performance()
     st.write(f"Retorno esperado: {performance[0]:.2f}%")
     st.write(f"Risco (Desvio Padrão): {performance[1]:.2f}%")
@@ -66,6 +69,6 @@ try:
 
     # Exibir um gráfico da carteira ótima
     st.bar_chart(optimized_weights)
-    
+
 except Exception as e:
     st.error(str(e))
