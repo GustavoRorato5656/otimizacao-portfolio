@@ -89,3 +89,4 @@ def create_dashboard():
 
         except Exception as e:
             st.error(f"Ocorreu um erro: {e}")
+
