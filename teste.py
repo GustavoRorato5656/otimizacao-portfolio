@@ -127,5 +127,6 @@ def create_dashboard():
             st.error(f"Ocorreu um erro: {e}")
 
 # Execução do aplicativo
-if _name_ == "_main_":
+if __name__ == "__main__":
     create_dashboard()
+
