@@ -80,5 +80,5 @@ def create_dashboard():
         except ValueError as e:
             st.error(f"Erro na otimização do portfólio: {e}")
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     create_dashboard()
